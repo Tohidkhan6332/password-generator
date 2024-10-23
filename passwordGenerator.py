@@ -1,67 +1,66 @@
-import itertools
 import threading
+import random
+import string
+
 
 class PasswordGenerator:
-    def __init__(self, possible_combination: int, combination_type: int, num_threads: int):
+    def __init__(self, possible_combination: int, combination_type: int, count_threads: int):
         self.possible_combination = possible_combination
         self.combination_type = combination_type
-        self.special = '!"#$%&\'()*+,-. /:;?@[]^_`{|}~'
-        self.numeric = '0123456789'
-        self.alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        self.get_carecter = ""
-        self.num_threads = num_threads
-        
-    def generate_get_carecter(self):
+        self.special_character = string.punctuation
+        self.numeric = string.digits
+        self.alphabet = string.ascii_letters  # Используем встроенные константы
+        self.get_character = ""
+        self.count_threads = count_threads
+        self.passwords = []
+
+    def generate_get_character(self):
         if self.combination_type == 1:
-            self.get_carecter = self.numeric + self.alphabet
+            self.get_character = self.numeric + self.alphabet
         elif self.combination_type == 2:
-            self.get_carecter = self.numeric
+            self.get_character = self.numeric
         elif self.combination_type == 3:
-            self.get_carecter = self.alphabet
+            self.get_character = self.alphabet
         elif self.combination_type == 4:
-            self.get_carecter = self.special
+            self.get_character = self.special_character
         elif self.combination_type == 5:
-            self.get_carecter = self.special + self.numeric
+            self.get_character = self.special_character + self.numeric
         elif self.combination_type == 6:
-            self.get_carecter = self.special + self.numeric + self.alphabet
+            self.get_character = self.special_character + self.numeric + self.alphabet
         else:
             raise ValueError("Invalid combination_type")
 
-    def generate_password(self, start: int, end: int, output):
-        for x in itertools.product(*([self.get_carecter] * self.possible_combination))[start:end]:
-            output.append(''.join(x))
+    def generate_password(self):
+        for _ in range(self.possible_combination):
+            password = ''.join(random.choice(self.get_character) for _ in range(self.possible_combination))
+            self.passwords.append(password)
+
+    def generate_password_thread(self):
+        self.generate_password()
+
+    def generate_passwords(self):
+        self.generate_get_character()
+        threads = []
+
+        for _ in range(self.count_threads):
+            thread = threading.Thread(target=self.generate_password_thread)
+            threads.append(thread)
+            thread.start()
+
+        for thread in threads:
+            thread.join()
+
+        self.write_to_file()
 
     def write_to_file(self):
         with open("password_list.txt", "w") as file:
-            for password in self.generate_password():
+            for password in self.passwords:
                 file.write(password + "\n")
-                print(f"Possible combination: {password}")
 
-    def generate_password_thread(self, thread_id, output):
-        start = thread_id * self.possible_combination // self.num_threads
-        end = (thread_id + 1) * self.possible_combination // self.num_threads
-        passwords = []
-        self.generate_password(start, end, passwords)
-        output += passwords
+if __name__ == "__main__":
+    possible_combination = int(input("How many password combinations do you want to create?: "))
+    combination_type = int(input("Enter combination type (1-6): "))
+    count_threads = int(input("How many threads to use? "))
 
-    def generate_passwords(self):
-        self.generate_get_carecter()
-        threads = []
-        output = []
-        for i in range(self.num_threads):
-            threads.append(threading.Thread(target=self.generate_password_thread, args=(i, output)))
-            threads[i].start()
-
-        for i in range(self.num_threads):
-            threads[i].join()
-
-        with open("password_list.txt", "w") as file:
-            for password in output:
-                file.write(password + "\n")
-                print(f"Possible combination: {password}")
-
-possible_combination = int(input("How many password combinations do you want to create? Exp(3): "))
-combination_type = int(input("Enter combination type (1-6): "))
-num_threads = int(input("How many threads to use? "))
-generator = PasswordGenerator(possible_combination, combination_type, num_threads)
-generator.generate_passwords()
+    generator = PasswordGenerator(possible_combination, combination_type, count_threads)
+    generator.generate_passwords()

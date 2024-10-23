@@ -1,9 +1,14 @@
 # Password Generating Tools Using Python
 
+## Stack
+* `python 3.12`
+
+## Description
+An important feature of this project is that when you select the number of threads used, the number of possible combinations also changes.
 
 ## Run
 ```bash
-python3 passwordGenerator.py
+python passwordGenerator.py
 ```
 
 ### Example Image
